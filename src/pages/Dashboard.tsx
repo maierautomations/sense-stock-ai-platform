@@ -1,14 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingUp, Search, BarChart3, Clock, DollarSign } from "lucide-react";
+import { Brain, TrendingUp, Search, BarChart3, Clock, DollarSign, LogOut, Briefcase } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const recentAnalyses = [
     { symbol: "AAPL", analysis: "Buy", confidence: 95, timestamp: "2 hours ago" },
@@ -37,8 +39,18 @@ const Dashboard = () => {
                 Dashboard
               </Badge>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Welcome back, {user?.email?.split('@')[0]}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-muted-foreground">
+                Welcome back, {user?.email?.split('@')[0]}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={signOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -160,9 +172,13 @@ const Dashboard = () => {
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Portfolio Analysis</span>
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center space-y-2"
+              onClick={() => navigate("/portfolio")}
+            >
+              <Briefcase className="h-6 w-6" />
+              <span>Portfolio Tracker</span>
             </Button>
             <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
               <TrendingUp className="h-6 w-6" />
