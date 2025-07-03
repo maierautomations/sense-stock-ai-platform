@@ -24,7 +24,7 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      const from = location.state?.from?.pathname || "/";
+      const from = location.state?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);
@@ -43,7 +43,7 @@ const Auth = () => {
     const { error } = await signIn(formData.email, formData.password);
     
     if (!error) {
-      const from = location.state?.from?.pathname || "/";
+      const from = location.state?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     }
     
