@@ -1,27 +1,217 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingUp, Search, BarChart3, Clock, DollarSign, LogOut, Briefcase } from "lucide-react";
+import { Brain, TrendingUp, BarChart3, Clock, DollarSign, LogOut, Briefcase, LineChart, BookOpen, Users, Newspaper, Zap, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { AnalysisModeCard } from "@/components/analysis/AnalysisModeCard";
+import { SmartCommandInput } from "@/components/analysis/SmartCommandInput";
+import { AnalysisResults } from "@/components/analysis/AnalysisResults";
+
+interface AnalysisResult {
+  id: string;
+  symbol: string;
+  analysis_type: string;
+  command_text: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result_data?: any;
+  error_message?: string;
+  created_at: string;
+  completed_at?: string;
+}
 
 const Dashboard = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingResults, setLoadingResults] = useState(false);
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const recentAnalyses = [
-    { symbol: "AAPL", analysis: "Buy", confidence: 95, timestamp: "2 hours ago" },
-    { symbol: "TSLA", analysis: "Hold", confidence: 78, timestamp: "5 hours ago" },
-    { symbol: "GOOGL", analysis: "Buy", confidence: 89, timestamp: "1 day ago" },
+  const analysisModes = [
+    {
+      id: 'chart',
+      title: 'Chart Analysis',
+      description: 'Technical analysis with charts, patterns, and indicators',
+      icon: LineChart,
+      examples: ['Tesla chart', 'AAPL technical', 'NVDA patterns']
+    },
+    {
+      id: 'fundamental',
+      title: 'Fundamental Analysis', 
+      description: 'Financial metrics, ratios, and company fundamentals',
+      icon: BookOpen,
+      examples: ['Apple fundamental', 'MSFT financials', 'Google ratios']
+    },
+    {
+      id: 'insider',
+      title: 'Insider Activity',
+      description: 'Insider trading patterns and institutional movements',
+      icon: Users,
+      examples: ['Tesla insider', 'NVDA institutional', 'Amazon insider']
+    },
+    {
+      id: 'news_sentiment',
+      title: 'News Sentiment',
+      description: 'Market sentiment analysis from news and social media',
+      icon: Newspaper,
+      examples: ['Apple sentiment', 'TSLA news', 'Bitcoin sentiment']
+    },
+    {
+      id: 'full_analysis',
+      title: 'Full Analysis',
+      description: 'Comprehensive analysis combining all methods',
+      icon: Zap,
+      examples: ['Tesla full analysis', 'AAPL complete', 'NVDA full report']
+    }
   ];
 
+  const fetchAnalysisResults = async () => {
+    if (!user) return;
+    
+    setLoadingResults(true);
+    try {
+      const { data, error } = await supabase
+        .from('stock_analyses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setAnalysisResults((data || []) as AnalysisResult[]);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingResults(false);
+    }
+  };
+
+  const parseCommand = (command: string) => {
+    const lowerCommand = command.toLowerCase();
+    
+    // Extract symbol (look for 3-5 uppercase letters or common patterns)
+    const symbolMatch = command.match(/\b([A-Z]{1,5})\b/) || 
+                       lowerCommand.match(/\b(tesla|apple|microsoft|amazon|google|nvidia|meta|netflix)\b/);
+    
+    let symbol = '';
+    if (symbolMatch) {
+      const matched = symbolMatch[1];
+      // Convert company names to symbols
+      const nameToSymbol: { [key: string]: string } = {
+        'tesla': 'TSLA',
+        'apple': 'AAPL', 
+        'microsoft': 'MSFT',
+        'amazon': 'AMZN',
+        'google': 'GOOGL',
+        'nvidia': 'NVDA',
+        'meta': 'META',
+        'netflix': 'NFLX'
+      };
+      symbol = nameToSymbol[matched.toLowerCase()] || matched.toUpperCase();
+    }
+
+    // Determine analysis type
+    let analysisType = selectedMode || 'full_analysis';
+    if (lowerCommand.includes('chart') || lowerCommand.includes('technical')) {
+      analysisType = 'chart';
+    } else if (lowerCommand.includes('fundamental') || lowerCommand.includes('financial')) {
+      analysisType = 'fundamental';
+    } else if (lowerCommand.includes('insider') || lowerCommand.includes('institutional')) {
+      analysisType = 'insider';
+    } else if (lowerCommand.includes('sentiment') || lowerCommand.includes('news')) {
+      analysisType = 'news_sentiment';
+    } else if (lowerCommand.includes('full') || lowerCommand.includes('complete')) {
+      analysisType = 'full_analysis';
+    }
+
+    return { symbol, analysisType };
+  };
+
+  const handleAnalysisSubmit = async (command: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please log in to run analysis",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { symbol, analysisType } = parseCommand(command);
+    
+    if (!symbol) {
+      toast({
+        title: "Error", 
+        description: "Please include a stock symbol in your command",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('stock_analyses')
+        .insert({
+          user_id: user.id,
+          symbol: symbol,
+          analysis_type: analysisType as any,
+          command_text: command,
+          status: 'pending'
+        });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Analysis Started",
+          description: `Started ${analysisType.replace('_', ' ')} analysis for ${symbol}`,
+        });
+        fetchAnalysisResults();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalysisResults();
+  }, [user]);
+
+  const totalAnalyses = analysisResults.length;
+  const completedAnalyses = analysisResults.filter(r => r.status === 'completed').length;
+  const pendingAnalyses = analysisResults.filter(r => r.status === 'pending' || r.status === 'processing').length;
+
   const marketStats = [
-    { label: "Analyses Today", value: "12", icon: BarChart3 },
-    { label: "Accuracy Rate", value: "94%", icon: TrendingUp },
-    { label: "Total Saved", value: "$2,340", icon: DollarSign },
+    { label: "Total Analyses", value: totalAnalyses.toString(), icon: BarChart3 },
+    { label: "Completed", value: completedAnalyses.toString(), icon: TrendingUp },
+    { label: "In Progress", value: pendingAnalyses.toString(), icon: Clock },
   ];
 
   return (
@@ -84,87 +274,41 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Analysis Modes */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Choose Analysis Mode</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {analysisModes.map((mode) => (
+              <AnalysisModeCard
+                key={mode.id}
+                title={mode.title}
+                description={mode.description}
+                icon={mode.icon}
+                examples={mode.examples}
+                onSelect={() => setSelectedMode(mode.id)}
+                isSelected={selectedMode === mode.id}
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Stock Analysis Section */}
+          {/* Smart Command Input */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Search className="h-5 w-5" />
-                  <span>Analyze Stock</span>
-                </CardTitle>
-                <CardDescription>
-                  Enter a stock symbol to get AI-powered analysis and recommendations.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="Enter stock symbol (e.g., AAPL, TSLA, GOOGL)"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Analyze
-                  </Button>
-                </div>
-                
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    <span className="font-medium">AI Analysis Ready</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Enter a stock symbol above to receive comprehensive AI analysis including 
-                    technical indicators, sentiment analysis, and price predictions.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <SmartCommandInput
+              onSubmit={handleAnalysisSubmit}
+              isLoading={isLoading}
+              selectedMode={selectedMode || undefined}
+            />
           </div>
 
-          {/* Recent Analyses */}
+          {/* Analysis Results */}
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Clock className="h-5 w-5" />
-                  <span>Recent Analyses</span>
-                </CardTitle>
-                <CardDescription>
-                  Your latest stock analysis results.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {recentAnalyses.map((analysis, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="font-medium text-foreground">{analysis.symbol}</div>
-                      <Badge 
-                        variant={analysis.analysis === "Buy" ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        {analysis.analysis}
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-foreground">
-                        {analysis.confidence}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {analysis.timestamp}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                <Button variant="outline" className="w-full mt-4">
-                  View All Analyses
-                </Button>
-              </CardContent>
-            </Card>
+            <AnalysisResults
+              results={analysisResults}
+              onRefresh={fetchAnalysisResults}
+              isLoading={loadingResults}
+            />
           </div>
         </div>
 
