@@ -55,6 +55,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          n8n_webhook_url: string | null
           updated_at: string
           user_id: string
         }
@@ -64,6 +65,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          n8n_webhook_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -73,6 +75,52 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          n8n_webhook_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stock_analyses: {
+        Row: {
+          analysis_type: Database["public"]["Enums"]["analysis_type"]
+          command_text: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          request_data: Json | null
+          result_data: Json | null
+          status: string
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_type: Database["public"]["Enums"]["analysis_type"]
+          command_text: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_data?: Json | null
+          result_data?: Json | null
+          status?: string
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_type?: Database["public"]["Enums"]["analysis_type"]
+          command_text?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_data?: Json | null
+          result_data?: Json | null
+          status?: string
+          symbol?: string
           updated_at?: string
           user_id?: string
         }
@@ -86,7 +134,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      analysis_type:
+        | "chart"
+        | "fundamental"
+        | "insider"
+        | "news_sentiment"
+        | "full_analysis"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -201,6 +254,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      analysis_type: [
+        "chart",
+        "fundamental",
+        "insider",
+        "news_sentiment",
+        "full_analysis",
+      ],
+    },
   },
 } as const
