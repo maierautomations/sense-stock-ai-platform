@@ -129,20 +129,25 @@ const Dashboard = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('stock_analyses')
-        .insert({
-          user_id: user.id,
-          symbol: symbol,
-          analysis_type: analysisType as any,
+      const { data, error } = await supabase.functions.invoke('trigger-analysis', {
+        body: {
+          symbol,
+          analysis_type: analysisType,
           command_text: command,
-          status: 'pending'
-        });
+          user_id: user.id
+        }
+      });
 
       if (error) {
         toast({
           title: "Error",
           description: error.message,
+          variant: "destructive",
+        });
+      } else if (data?.error) {
+        toast({
+          title: "Error",
+          description: data.error,
           variant: "destructive",
         });
       } else {
