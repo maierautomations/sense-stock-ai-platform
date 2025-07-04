@@ -7,10 +7,9 @@ import { Brain, Send, Lightbulb } from "lucide-react";
 interface SmartCommandInputProps {
   onSubmit: (command: string) => void;
   isLoading: boolean;
-  selectedMode?: string;
 }
 
-export const SmartCommandInput = ({ onSubmit, isLoading, selectedMode }: SmartCommandInputProps) => {
+export const SmartCommandInput = ({ onSubmit, isLoading }: SmartCommandInputProps) => {
   const [command, setCommand] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,19 +36,13 @@ export const SmartCommandInput = ({ onSubmit, isLoading, selectedMode }: SmartCo
           <span>Smart Analysis Command</span>
         </CardTitle>
         <CardDescription>
-          {selectedMode 
-            ? `Enter a stock symbol for ${selectedMode} analysis, or use natural language`
-            : "Type your analysis request using natural language or select a mode above"
-          }
+          Type your analysis request using natural language - specify any stock symbol and analysis type
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <Input
-            placeholder={selectedMode 
-              ? `e.g., "AAPL ${selectedMode}" or "Apple ${selectedMode} analysis"`
-              : "e.g., \"Tesla chart analysis\" or \"NVDA full analysis\""
-            }
+            placeholder='e.g., "Tesla chart analysis" or "NVDA full analysis"'
             value={command}
             onChange={(e) => setCommand(e.target.value)}
             className="flex-1"

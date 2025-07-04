@@ -7,7 +7,7 @@ import { Brain, TrendingUp, BarChart3, Clock, DollarSign, LogOut, Briefcase, Lin
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AnalysisModeCard } from "@/components/analysis/AnalysisModeCard";
+
 import { SmartCommandInput } from "@/components/analysis/SmartCommandInput";
 import { AnalysisResults } from "@/components/analysis/AnalysisResults";
 
@@ -24,7 +24,7 @@ interface AnalysisResult {
 }
 
 const Dashboard = () => {
-  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingResults, setLoadingResults] = useState(false);
@@ -32,43 +32,6 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const analysisModes = [
-    {
-      id: 'chart',
-      title: 'Chart Analysis',
-      description: 'Technical analysis with charts, patterns, and indicators',
-      icon: LineChart,
-      examples: ['Tesla chart', 'AAPL technical', 'NVDA patterns']
-    },
-    {
-      id: 'fundamental',
-      title: 'Fundamental Analysis', 
-      description: 'Financial metrics, ratios, and company fundamentals',
-      icon: BookOpen,
-      examples: ['Apple fundamental', 'MSFT financials', 'Google ratios']
-    },
-    {
-      id: 'insider',
-      title: 'Insider Activity',
-      description: 'Insider trading patterns and institutional movements',
-      icon: Users,
-      examples: ['Tesla insider', 'NVDA institutional', 'Amazon insider']
-    },
-    {
-      id: 'news_sentiment',
-      title: 'News Sentiment',
-      description: 'Market sentiment analysis from news and social media',
-      icon: Newspaper,
-      examples: ['Apple sentiment', 'TSLA news', 'Bitcoin sentiment']
-    },
-    {
-      id: 'full_analysis',
-      title: 'Full Analysis',
-      description: 'Comprehensive analysis combining all methods',
-      icon: Zap,
-      examples: ['Tesla full analysis', 'AAPL complete', 'NVDA full report']
-    }
-  ];
 
   const fetchAnalysisResults = async () => {
     if (!user) return;
@@ -127,7 +90,7 @@ const Dashboard = () => {
     }
 
     // Determine analysis type
-    let analysisType = selectedMode || 'full_analysis';
+    let analysisType = 'full_analysis';
     if (lowerCommand.includes('chart') || lowerCommand.includes('technical')) {
       analysisType = 'chart';
     } else if (lowerCommand.includes('fundamental') || lowerCommand.includes('financial')) {
@@ -274,23 +237,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Analysis Modes */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Choose Analysis Mode</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {analysisModes.map((mode) => (
-              <AnalysisModeCard
-                key={mode.id}
-                title={mode.title}
-                description={mode.description}
-                icon={mode.icon}
-                examples={mode.examples}
-                onSelect={() => setSelectedMode(mode.id)}
-                isSelected={selectedMode === mode.id}
-              />
-            ))}
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Smart Command Input */}
@@ -298,7 +244,6 @@ const Dashboard = () => {
             <SmartCommandInput
               onSubmit={handleAnalysisSubmit}
               isLoading={isLoading}
-              selectedMode={selectedMode || undefined}
             />
           </div>
 
