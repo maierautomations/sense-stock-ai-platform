@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 import { SmartCommandInput } from "@/components/analysis/SmartCommandInput";
-import { AnalysisResults } from "@/components/analysis/AnalysisResults";
+import { EnhancedAnalysisResults } from "@/components/analysis/EnhancedAnalysisResults";
 
 interface AnalysisResult {
   id: string;
@@ -254,7 +254,7 @@ const Dashboard = () => {
 
           {/* Analysis Results */}
           <div>
-            <AnalysisResults
+            <EnhancedAnalysisResults
               results={analysisResults}
               onRefresh={fetchAnalysisResults}
               isLoading={loadingResults}
